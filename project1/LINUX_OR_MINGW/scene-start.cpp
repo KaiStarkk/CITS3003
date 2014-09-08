@@ -556,10 +556,6 @@ void timer(int unused)
     glutTimerFunc(1000, timer, 1);
 }
 
-char dirDefault1[] = "models-textures";
-char dirDefault2[] = "/c/temp/models-textures";
-char dirDefault3[] = "/tmp/models-textures";
-char dirDefault4[] = "/cslinux/examples/CITS3003/project-files/models-textures";
 
 void fileErr(char* fileName) {
     printf("Error reading file: %s\n\n", fileName);
@@ -581,18 +577,13 @@ int main( int argc, char* argv[] )
         if(*cpointer == '/' || *cpointer == '\\') programName = cpointer+1;
 
     // Set the models-textures directory, via the first argument or some handy defaults.
-    if(argc>1)                     strcpy(dataDir, argv[1]);
-    else if(opendir(dirDefault1))  strcpy(dataDir, dirDefault1);
-    else if(opendir(dirDefault2))  strcpy(dataDir, dirDefault2);
-    else if(opendir(dirDefault3))  strcpy(dataDir, dirDefault3);
-    else if(opendir(dirDefault4))  strcpy(dataDir, dirDefault4);
-    else fileErr(dirDefault1);
+    if(!opendir(dataDir)) fileErr(dataDir);
 
     glutInit( &argc, argv );
     glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH );
     glutInitWindowSize( windowWidth, windowHeight );
 
-    glutInitContextVersion( 3, 2);
+    glutInitContextVersion(3, 2);
     //glutInitContextProfile( GLUT_CORE_PROFILE );        // May cause issues, sigh, but you
     glutInitContextProfile( GLUT_COMPATIBILITY_PROFILE ); // should still use only OpenGL 3.2 Core
                                                           // features.
