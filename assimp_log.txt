@@ -1,0 +1,37 @@
+Info,  T0: Load assets/model0.x
+Info,  T0: Found a matching importer for this file format
+Info,  T0: Import root directory is 'assets/'
+Info,  T0: Entering post processing pipeline
+Info,  T0: TriangulateProcess finished. All polygons have been triangulated.
+Info,  T0: Points: 0, Lines: 0, Triangles: 1, Polygons: 0 (Meshes, X = removed)
+Info,  T0: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T0: JoinVerticesProcess finished | Verts in: 324 out: 100 | ~69.1%
+Info,  T0: Cache relevant are 1 meshes (162 faces). Average output ACMR is 0.796296
+Info,  T0: Leaving post processing pipeline
+Info,  T0: Load assets/model55.x
+Info,  T0: Found a matching importer for this file format
+Info,  T0: Import root directory is 'assets/'
+Info,  T0: Entering post processing pipeline
+Info,  T0: Points: 0, Lines: 0, Triangles: 1, Polygons: 0 (Meshes, X = removed)
+Info,  T0: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T0: JoinVerticesProcess finished | Verts in: 240 out: 76 | ~68.3%
+Info,  T0: Cache relevant are 1 meshes (80 faces). Average output ACMR is 0.950000
+Info,  T0: Leaving post processing pipeline
+Info,  T0: Load assets/model5.x
+Info,  T0: Found a matching importer for this file format
+Info,  T0: Import root directory is 'assets/'
+Info,  T0: Entering post processing pipeline
+Info,  T0: Points: 0, Lines: 0, Triangles: 1, Polygons: 0 (Meshes, X = removed)
+Info,  T0: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T0: JoinVerticesProcess finished | Verts in: 24600 out: 5964 | ~75.8%
+Info,  T0: Cache relevant are 1 meshes (8200 faces). Average output ACMR is 0.878902
+Info,  T0: Leaving post processing pipeline
+Info,  T0: Load assets/model9.x
+Info,  T0: Found a matching importer for this file format
+Info,  T0: Import root directory is 'assets/'
+Info,  T0: Entering post processing pipeline
+Info,  T0: Points: 0, Lines: 0, Triangles: 1, Polygons: 0 (Meshes, X = removed)
+Info,  T0: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T0: JoinVerticesProcess finished | Verts in: 28200 out: 8955 | ~68.2%
+Info,  T0: Cache relevant are 1 meshes (9400 faces). Average output ACMR is 1.065213
+Info,  T0: Leaving post processing pipeline

@@ -6,7 +6,7 @@
 
 #include "bitmap.h"
 
-char dataDir[] = "models-textures";  // Stores the path to the models-textures folder.
+char dataDir[] = "assets";  // Stores the path to the models-textures folder.
 const int numTextures = 31; 
 const int numMeshes = 56;
 
