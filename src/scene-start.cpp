@@ -537,13 +537,19 @@ void reshape(int width, int height) {
 
     glViewport(0, 0, width, height);
 
+    float fov = 20.0;
+
+    if (width < height) {
+      fov *= (float)height / (float)width;
+    }
+
     // You'll need to modify this so that the view is similar to that in the sample solution.
     // In particular: 
     //   - the view should include "closer" visible objects (slightly tricky)
     //   - when the width is less than the height, the view should adjust so that the same part
     //     of the scene is visible across the width of the window.
 
-    projection = Perspective(20, (float)width/(float)height, 0.0005, 20.0);
+    projection = Perspective(fov, (float)width/(float)height, 0.0005, 20.0);
 }
 
 void timer(int unused)
