@@ -25,7 +25,7 @@ GLuint shaderProgram; // The number identifying the GLSL shader program
 GLuint vPosition, vNormal, vTexCoord; // IDs for vshader input vars (from glGetAttribLocation)
 GLuint projectionU, modelViewU; // IDs for uniform variables (from glGetUniformLocation)
 
-static float viewDist = 1.5; // Distance from the camera to the centre of the scene
+static float viewDist = 7.5; // Distance from the camera to the centre of the scene
 static float camRotSidewaysDeg=0; // rotates the camera sideways around the centre
 static float camRotUpAndOverDeg=20; // rotates the camera up and over the centre.
 
@@ -310,19 +310,15 @@ void drawMesh(SceneObject sceneObj) {
     // Set the texture scale for the shaders
     glUniform1f( glGetUniformLocation( shaderProgram, "texScale"), sceneObj.texScale );
 
-
     // Set the projection matrix for the shaders
     glUniformMatrix4fv( projectionU, 1, GL_TRUE, projection );
 
     // Set the model matrix - this should combine translation, rotation and scaling based on what's
     // in the sceneObj structure (see near the top of the program).
-
     mat4 model = Translate(sceneObj.loc)*RotateZ(sceneObj.angles[2])*RotateY(sceneObj.angles[1])*RotateX(sceneObj.angles[0])*Scale(sceneObj.scale);
-
 
     // Set the model-view matrix for the shaders
     glUniformMatrix4fv( modelViewU, 1, GL_TRUE, view * model );
-
 
     // Activate the VAO for a mesh, loading if needed.
     loadMeshIfNotAlreadyLoaded(sceneObj.meshId); CheckError();
@@ -459,7 +455,7 @@ static void materialMenu(int id) {
     setToolCallbacks(adjustAmbientDiffuse, mat2(1, 0, 0, 1),
                      adjustSpecularShine, mat2(1, 0, 0, 1) );
   }
-	
+					  
   else { printf("Error in materialMenu\n"); }
 }
 
@@ -535,16 +531,11 @@ void idle( void ) {
   glutPostRedisplay();
 }
 
-
-
-void reshape( int width, int height ) {
-
+void reshape(int width, int height) {
     windowWidth = width;
     windowHeight = height;
 
     glViewport(0, 0, width, height);
-
-
 
     // You'll need to modify this so that the view is similar to that in the sample solution.
     // In particular: 
@@ -552,11 +543,7 @@ void reshape( int width, int height ) {
     //   - when the width is less than the height, the view should adjust so that the same part
     //     of the scene is visible across the width of the window.
 
-    GLfloat nearDist = 0.2;
-    projection = Frustum(-nearDist*(float)width/(float)height, nearDist*(float)width/(float)height,
-                         -nearDist, nearDist,
-                         nearDist, 100.0);
-
+    projection = Perspective(20, (float)width/(float)height, 0.0005, 20.0);
 }
 
 void timer(int unused)
