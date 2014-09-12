@@ -28,17 +28,20 @@ void main()
     vec3 E = normalize( -pos );   // Direction to the eye/camera
     vec3 H = normalize( L + E );  // Halfway vector
 
+    float Ldist = length(Lvec); // Distance from light source
+    float Lscale = 1.0 / (Ldist * Ldist); // Light scaling factor
+
     // Transform vertex normal into eye coordinates (assumes scaling is uniform across dimensions)
-    vec3 N = normalize( (ModelView*vec4(vNormal, 0.0)).xyz );
+    vec3 N = normalize( (ModelView * vec4(vNormal, 0.0)).xyz );
 
     // Compute terms in the illumination equation
     vec3 ambient = AmbientProduct;
 
     float Kd = max( dot(L, N), 0.0 );
-    vec3  diffuse = Kd*DiffuseProduct;
+    vec3  diffuse = Kd * DiffuseProduct * Lscale;
 
     float Ks = pow( max(dot(N, H), 0.0), Shininess );
-    vec3  specular = Ks * SpecularProduct;
+    vec3  specular = Ks * SpecularProduct * Lscale;
     
     if( dot(L, N) < 0.0 ) {
 	specular = vec3(0.0, 0.0, 0.0);
