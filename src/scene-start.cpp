@@ -285,6 +285,12 @@ void init( void )
     sceneObjs[1].texId = 0; // Plain texture
     sceneObjs[1].brightness = 0.8; // The light's brightness is 5 times this (below).
 
+    addObject(55); // Sphere for the first light
+    sceneObjs[2].loc = vec4(1.0, 2.0, 1.0, 1.0);
+    sceneObjs[2].scale = 0.1;
+    sceneObjs[2].texId = 0; // Plain texture
+    sceneObjs[2].brightness = 0.8; // The light's brightness is 5 times this (below).
+
     addObject(rand() % numMeshes); // A test mesh
 
     // We need to enable the depth test to discard fragments that
@@ -328,38 +334,42 @@ void drawMesh(SceneObject sceneObj) {
 }
 
 
-void
-display( void )
-{
+void display(void) {
     numDisplayCalls++;
 
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     CheckError(); // May report a harmless GL_INVALID_OPERATION with GLEW on the first frame
 
-// Set the view matrix.  To start with this just moves the camera backwards.  You'll need to
-// add appropriate rotations.
+    // Set the view matrix.  To start with this just moves the camera backwards.  You'll need to
+    // add appropriate rotations.
 
-
-
-    view = Translate(0.0, 0.0, -viewDist)*RotateX(camRotUpAndOverDeg)*RotateY(camRotSidewaysDeg);
-
+    view = Translate(0.0, 0.0, -viewDist) * RotateX(camRotUpAndOverDeg) * RotateY(camRotSidewaysDeg);
 
     SceneObject lightObj1 = sceneObjs[1]; 
-    vec4 lightPosition = view * lightObj1.loc ;
+    vec4 lightPosition1 = view * lightObj1.loc;
 
-    glUniform4fv( glGetUniformLocation(shaderProgram, "LightPosition"), 1, lightPosition); CheckError();
+    SceneObject lightObj2 = sceneObjs[2]; 
+    vec4 lightPosition2 = view * lightObj2.loc;
+
+    glUniform4fv(glGetUniformLocation(shaderProgram, "LightPosition1"), 1, lightPosition1); CheckError();
+    glUniform4fv(glGetUniformLocation(shaderProgram, "LightPosition2"), 1, lightPosition2); CheckError();
 
     for(int i=0; i<nObjects; i++) {
         SceneObject so = sceneObjs[i];
 
-        vec3 rgb = so.rgb * lightObj1.rgb * so.brightness * lightObj1.brightness * 2.0;
-        glUniform3fv( glGetUniformLocation(shaderProgram, "AmbientProduct"), 1, so.ambient * rgb ); CheckError();
-        glUniform3fv( glGetUniformLocation(shaderProgram, "DiffuseProduct"), 1, so.diffuse * rgb );
-        glUniform3fv( glGetUniformLocation(shaderProgram, "SpecularProduct"), 1, so.specular * rgb );
-        glUniform1f( glGetUniformLocation(shaderProgram, "Shininess"), so.shine ); CheckError();
+        vec3 rgb1 = so.rgb * lightObj1.rgb * so.brightness * lightObj1.brightness;
+        glUniform3fv(glGetUniformLocation(shaderProgram, "AmbientProduct1"), 1, so.ambient * rgb1 ); CheckError();
+        glUniform3fv(glGetUniformLocation(shaderProgram, "DiffuseProduct1"), 1, so.diffuse * rgb1 );
+        glUniform3fv(glGetUniformLocation(shaderProgram, "SpecularProduct1"), 1, so.specular * rgb1 );
+
+        vec3 rgb2 = so.rgb * lightObj2.rgb * so.brightness * lightObj2.brightness;
+        glUniform3fv(glGetUniformLocation(shaderProgram, "AmbientProduct2"), 1, so.ambient * rgb2 ); CheckError();
+        glUniform3fv(glGetUniformLocation(shaderProgram, "DiffuseProduct2"), 1, so.diffuse * rgb2 );
+        glUniform3fv(glGetUniformLocation(shaderProgram, "SpecularProduct2"), 1, so.specular * rgb2 );
+
+        glUniform1f(glGetUniformLocation(shaderProgram, "Shininess"), so.shine ); CheckError();
 
         drawMesh(sceneObjs[i]);
-
     }
 
     glutSwapBuffers();
@@ -405,6 +415,15 @@ static void adjustBlueBrightness(vec2 bl_br)
 
     } else if(id>=71 && id<=74) {
 	    toolObj = 1;
+        setToolCallbacks(adjustRedGreen, mat2(1.0, 0, 0, 1.0),
+                         adjustBlueBrightness, mat2(1.0, 0, 0, 1.0) );
+    } else if(id == 80) {
+        toolObj = 2;
+        setToolCallbacks(adjustLocXZ, camRotZ(),
+                         adjustBrightnessY, mat2( 1.0, 0.0, 0.0, 10.0) );
+
+    } else if(id>=81 && id<=84) {
+        toolObj = 2;
         setToolCallbacks(adjustRedGreen, mat2(1.0, 0, 0, 1.0),
                          adjustBlueBrightness, mat2(1.0, 0, 0, 1.0) );
     }
@@ -602,9 +621,9 @@ int main( int argc, char* argv[] )
 
     init();     CheckError(); // Use CheckError after an OpenGL command to print any errors.
 
-    glutDisplayFunc( display );
-    glutKeyboardFunc( keyboard );
-    glutIdleFunc( idle );
+    glutDisplayFunc(display);
+    glutKeyboardFunc(keyboard);
+    glutIdleFunc(idle);
 
     glutMouseFunc( mouseClickOrScroll );
     glutPassiveMotionFunc(mousePassiveMotion);
