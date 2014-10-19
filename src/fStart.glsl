@@ -44,10 +44,7 @@ main()
     }
 
     // The vector to the light from the vertex    
-    vec3 Lvec2 = LightPosition2.xyz - pos;
-
-    float Ldist2 = length(Lvec2); // Distance from light source
-    float Lscale2 = 1.0 / (Ldist2 * Ldist2); // Light scaling factor
+    vec3 Lvec2 = LightPosition2.xyz;
 
     vec3 L2 = normalize(Lvec2);   // Direction to the light source
     vec3 H2 = normalize(L2 + E);  // Halfway vector
@@ -55,20 +52,21 @@ main()
     // Compute terms in the illumination equation
     vec3 ambient2 = AmbientProduct2;
 
-    float Kd2 = max(dot(L2, N), 0.0);
-    vec3  diffuse2 = Kd2 * DiffuseProduct2 * Lscale2;
+    float Kd2 = max(dot(Lvec2, N), 0.0);
+    vec3  diffuse2 = Kd2 * DiffuseProduct2;
 
     float Ks2 = pow(max(dot(N, H2), 0.0), Shininess);
-    vec3  specular2 = Ks2 * SpecularProduct2 * Lscale2;
+    vec3  specular2 = Ks2 * SpecularProduct2;
     
     if( dot(L2, N) < 0.0 ) {
       specular2 = vec3(0.0, 0.0, 0.0);
-    }
+    }   
 
     vec4 color;
 
     color.rgb = globalAmbient + ambient1 + diffuse1 + specular1
                               + ambient2 + diffuse2 + specular2;
+
     color.a = 1.0;
 
     fColor = color * texture2D( texture, texCoord * 2.0 );
