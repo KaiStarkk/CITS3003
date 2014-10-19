@@ -73,7 +73,7 @@ int nObjects=0; // How many objects are currenly in the scene.
 int currObject=-1; // The current object
 int toolObj = -1;  // The object currently being modified
 
-
+int selectMenuId;
 
 
 //------------------------------------------------------------
@@ -381,6 +381,12 @@ void display(void) {
 static void objectMenu(int id) {
   deactivateTool();
   addObject(id);
+
+  // Add object to select menu.
+  char label[4];
+  sprintf(label, "%d", currObject);
+  glutSetMenu(selectMenuId);
+  glutAddMenuEntry(label, currObject + 1000);
 }
 
 static void texMenu(int id) {
@@ -474,8 +480,12 @@ static void materialMenu(int id) {
     setToolCallbacks(adjustAmbientDiffuse, mat2(1, 0, 0, 1),
                      adjustSpecularShine, mat2(1, 0, 0, 1) );
   }
-					  
+                      
   else { printf("Error in materialMenu\n"); }
+}
+
+static void selectMenu(int id) {
+  toolObj = currObject = id - 1000;
 }
 
 static void adjustAngleYX(vec2 angle_yx) 
@@ -517,9 +527,13 @@ static void makeMenu() {
   glutAddMenuEntry("Move Light 2",80);
   glutAddMenuEntry("R/G/B/All Light 2",81);
 
+  selectMenuId = glutCreateMenu(selectMenu);
+  glutAddMenuEntry("3", 1003);
+
   glutCreateMenu(mainmenu);
   glutAddMenuEntry("Rotate/Move Camera",50);
   glutAddSubMenu("Add object", objectId);
+  glutAddSubMenu("Select object", selectMenuId);
   glutAddMenuEntry("Position/Scale", 41);
   glutAddMenuEntry("Rotation/Texture Scale", 55);
   glutAddSubMenu("Material", materialMenuId);
@@ -619,7 +633,9 @@ int main( int argc, char* argv[] )
     glewInit(); // With some old hardware yields GL_INVALID_ENUM, if so use glewExperimental.
     CheckError(); // This bug is explained at: http://www.opengl.org/wiki/OpenGL_Loading_Library
 
-    init();     CheckError(); // Use CheckError after an OpenGL command to print any errors.
+    makeMenu(); CheckError();
+
+    init(); CheckError(); // Use CheckError after an OpenGL command to print any errors.
 
     glutDisplayFunc(display);
     glutKeyboardFunc(keyboard);
@@ -631,8 +647,6 @@ int main( int argc, char* argv[] )
  
     glutReshapeFunc( reshape );
     glutTimerFunc(1000, timer, 1);   CheckError();
-
-    makeMenu(); CheckError();
 
     glutMainLoop();
     return 0;
