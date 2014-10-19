@@ -37,7 +37,8 @@ main()
     vec3  diffuse1 = Kd1 * DiffuseProduct1 * Lscale1;
 
     float Ks1 = pow(max(dot(N, H1), 0.0), Shininess);
-    vec3  specular1 = Ks1 * SpecularProduct1 * Lscale1;
+    float Si1 = dot(SpecularProduct1, vec3(0.33, 0.33, 0.33));
+    vec3  specular1 = Ks1 * vec3(Si1, Si1, Si1) * Lscale1;
     
     if( dot(L1, N) < 0.0 ) {
       specular1 = vec3(0.0, 0.0, 0.0);
@@ -56,7 +57,8 @@ main()
     vec3  diffuse2 = Kd2 * DiffuseProduct2;
 
     float Ks2 = pow(max(dot(N, H2), 0.0), Shininess);
-    vec3  specular2 = Ks2 * SpecularProduct2;
+    float Si2 = dot(SpecularProduct2, vec3(0.33, 0.33, 0.33));
+    vec3  specular2 = Ks2 * vec3(Si2, Si2, Si2);
     
     if( dot(L2, N) < 0.0 ) {
       specular2 = vec3(0.0, 0.0, 0.0);
@@ -64,10 +66,10 @@ main()
 
     vec4 color;
 
-    color.rgb = globalAmbient + ambient1 + diffuse1 + specular1
-                              + ambient2 + diffuse2 + specular2;
+    color.rgb = globalAmbient + ambient1 + diffuse1 + ambient2 + diffuse2;
 
     color.a = 1.0;
 
     fColor = color * texture2D( texture, texCoord * 2.0 );
+    fColor.rgb = fColor.rgb + specular1 + specular2;
 }
