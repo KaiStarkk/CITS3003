@@ -240,8 +240,6 @@ static void addObject(int id) {
   sceneObjs[nObjects].texId = rand() % numTextures;
   sceneObjs[nObjects].texScale = 2.0;
 
-  hidden[nObjects] = 0;
-
   toolObj = currObject = nObjects++;
   setToolCallbacks(adjustLocXZ, camRotZ(),
                    adjustScaleY, mat2(0.05, 0, 0, 10.0) );
@@ -394,7 +392,7 @@ static void objectMenu(int id) {
   char label[4];
   sprintf(label, "%d", currObject);
   glutSetMenu(selectMenuId);
-  glutAddMenuEntry(label, currObject + 1000);
+  glutAddMenuEntry(label, currObject);
 }
 
 static void texMenu(int id) {
@@ -493,7 +491,7 @@ static void materialMenu(int id) {
 }
 
 static void selectMenu(int id) {
-  toolObj = currObject = id - 1000;
+  toolObj = currObject = id;
 }
 
 static void adjustAngleYX(vec2 angle_yx) 
@@ -522,6 +520,17 @@ static void mainmenu(int id) {
     if (id == 57) {
       hidden[toolObj] = 0;
     }
+    if (id == 58) {
+        sceneObjs[nObjects] = sceneObjs[currObject];
+
+        toolObj = currObject = nObjects++;
+
+        // Add object to select menu.
+        char label[4];
+        sprintf(label, "%d", currObject);
+        glutSetMenu(selectMenuId);
+        glutAddMenuEntry(label, currObject);
+    }
     if(id == 99) exit(0);
 }
 
@@ -542,12 +551,13 @@ static void makeMenu() {
   glutAddMenuEntry("R/G/B/All Light 2",81);
 
   selectMenuId = glutCreateMenu(selectMenu);
-  glutAddMenuEntry("3", 1003);
+  glutAddMenuEntry("3", 3);
 
   glutCreateMenu(mainmenu);
   glutAddMenuEntry("Rotate/Move Camera",50);
   glutAddSubMenu("Add object", objectId);
   glutAddSubMenu("Select object", selectMenuId);
+  glutAddMenuEntry("Duplicate object", 58);
   glutAddMenuEntry("Hide object", 56);
   glutAddMenuEntry("Unide object", 57);
   glutAddMenuEntry("Position/Scale", 41);
