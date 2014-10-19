@@ -287,7 +287,7 @@ void init( void )
 
     addObject(55); // Sphere for the first light
     sceneObjs[2].loc = vec4(1.0, 2.0, 1.0, 1.0);
-    sceneObjs[2].scale = 0.1;
+    sceneObjs[2].scale = 0.3;
     sceneObjs[2].texId = 0; // Plain texture
     sceneObjs[2].brightness = 0.8; // The light's brightness is 5 times this (below).
 
