@@ -69,6 +69,8 @@ typedef struct {
 const int maxObjects = 1024; // Scenes with more than 1024 objects seem unlikely
 
 SceneObject sceneObjs[maxObjects]; // An array storing the objects currently in the scene.
+bool hidden[maxObjects];
+
 int nObjects=0; // How many objects are currenly in the scene.
 int currObject=-1; // The current object
 int toolObj = -1;  // The object currently being modified
@@ -238,6 +240,8 @@ static void addObject(int id) {
   sceneObjs[nObjects].texId = rand() % numTextures;
   sceneObjs[nObjects].texScale = 2.0;
 
+  hidden[nObjects] = 0;
+
   toolObj = currObject = nObjects++;
   setToolCallbacks(adjustLocXZ, camRotZ(),
                    adjustScaleY, mat2(0.05, 0, 0, 10.0) );
@@ -356,6 +360,10 @@ void display(void) {
 
     for(int i=0; i<nObjects; i++) {
         SceneObject so = sceneObjs[i];
+
+        if (hidden[i]) {
+          continue;
+        }
 
         vec3 rgb1 = so.rgb * lightObj1.rgb * so.brightness * lightObj1.brightness;
         glUniform3fv(glGetUniformLocation(shaderProgram, "AmbientProduct1"), 1, so.ambient * rgb1 ); CheckError();
@@ -508,6 +516,12 @@ static void mainmenu(int id) {
         setToolCallbacks(adjustAngleYX, mat2(400, 0, 0, -400),
                          adjustAngleZTexscale, mat2(400, 0, 0, 15) );
     }
+    if (id == 56) {
+      hidden[toolObj] = 1;
+    }
+    if (id == 57) {
+      hidden[toolObj] = 0;
+    }
     if(id == 99) exit(0);
 }
 
@@ -534,6 +548,8 @@ static void makeMenu() {
   glutAddMenuEntry("Rotate/Move Camera",50);
   glutAddSubMenu("Add object", objectId);
   glutAddSubMenu("Select object", selectMenuId);
+  glutAddMenuEntry("Hide object", 56);
+  glutAddMenuEntry("Unide object", 57);
   glutAddMenuEntry("Position/Scale", 41);
   glutAddMenuEntry("Rotation/Texture Scale", 55);
   glutAddSubMenu("Material", materialMenuId);
