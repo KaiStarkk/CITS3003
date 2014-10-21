@@ -60,6 +60,7 @@ typedef struct {
     float diffuse, specular, ambient; // Amount of each light component
     float shine;
     vec3 rgb;
+    float alpha;
     float brightness; // Multiplies all colours
     int meshId;
     int texId;
@@ -229,6 +230,7 @@ static void addObject(int id) {
 
   sceneObjs[nObjects].rgb[0] = 0.7; sceneObjs[nObjects].rgb[1] = 0.7;
   sceneObjs[nObjects].rgb[2] = 0.7; sceneObjs[nObjects].brightness = 1.0;
+  sceneObjs[nObjects].alpha = 1.0;
 
   sceneObjs[nObjects].diffuse = 1.0; sceneObjs[nObjects].specular = 0.5;
   sceneObjs[nObjects].ambient = 0.7; sceneObjs[nObjects].shine = 10.0;
@@ -297,7 +299,10 @@ void init( void )
 
     // We need to enable the depth test to discard fragments that
     // are behind previously drawn fragments for the same pixel.
-    glEnable( GL_DEPTH_TEST );
+    glEnable (GL_BLEND);
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable (GL_DEPTH_TEST);
+
     doRotate(); // Start in camera rotate mode.
     glClearColor( 0.0, 0.0, 0.0, 1.0 ); /* black background */
 }
@@ -362,6 +367,8 @@ void display(void) {
         if (hidden[i]) {
           continue;
         }
+
+        glUniform1f(glGetUniformLocation(shaderProgram, "Alpha"), so.alpha );
 
         vec3 rgb1 = so.rgb * lightObj1.rgb * so.brightness * lightObj1.brightness;
         glUniform3fv(glGetUniformLocation(shaderProgram, "AmbientProduct1"), 1, so.ambient * rgb1 ); CheckError();
@@ -472,6 +479,10 @@ static void adjustSpecularShine(vec2 ss) {
   sceneObjs[toolObj].shine += ss[1] * 10;
 }
 
+static void adjustAlpha(vec2 by) {
+  sceneObjs[toolObj].alpha += by[0];
+}
+
 static void materialMenu(int id) {
   deactivateTool();
   if(currObject<0) return;
@@ -481,10 +492,17 @@ static void materialMenu(int id) {
     setToolCallbacks(adjustRedGreen, mat2(1, 0, 0, 1),
                      adjustBlueBrightness, mat2(1, 0, 0, 1) );
   }
+
   if(id==20) {
     toolObj = currObject;
     setToolCallbacks(adjustAmbientDiffuse, mat2(1, 0, 0, 1),
                      adjustSpecularShine, mat2(1, 0, 0, 1) );
+  }
+
+  if(id==30) {
+    toolObj = currObject;
+    setToolCallbacks(adjustAlpha, mat2(1, 0, 0, 1),
+                     adjustAlpha, mat2(1, 0, 0, 1) );
   }
                       
   else { printf("Error in materialMenu\n"); }
@@ -540,6 +558,7 @@ static void makeMenu() {
   int materialMenuId = glutCreateMenu(materialMenu);
   glutAddMenuEntry("R/G/B/All",10);
   glutAddMenuEntry("Ambient/Diffuse/Specular/Shine",20);
+  glutAddMenuEntry("Alpha",30);
 
   int texMenuId = createArrayMenu(numTextures, textureMenuEntries, texMenu);
   int groundMenuId = createArrayMenu(numTextures, textureMenuEntries, groundMenu);

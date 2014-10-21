@@ -12,6 +12,7 @@ uniform vec3 AmbientProduct1, DiffuseProduct1, SpecularProduct1;
 uniform vec4 LightPosition2;
 uniform vec3 AmbientProduct2, DiffuseProduct2, SpecularProduct2;
 uniform float Shininess;
+uniform float Alpha;
 
 void
 main()
@@ -67,9 +68,9 @@ main()
     vec4 color;
 
     color.rgb = globalAmbient + ambient1 + diffuse1 + ambient2 + diffuse2;
-
     color.a = 1.0;
 
     fColor = color * texture2D( texture, texCoord * 2.0 );
     fColor.rgb = fColor.rgb + specular1 + specular2;
+    fColor.a = Alpha;
 }
