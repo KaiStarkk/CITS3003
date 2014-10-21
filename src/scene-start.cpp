@@ -23,7 +23,7 @@ using namespace std;    // Import the C++ standard functions (e.g., min)
 // IDs for the GLSL program and GLSL variables.
 GLuint shaderProgram; // The number identifying the GLSL shader program
 GLuint vPosition, vNormal, vTexCoord; // IDs for vshader input vars (from glGetAttribLocation)
-GLuint projectionU, modelViewU; // IDs for uniform variables (from glGetUniformLocation)
+GLuint projectionU, viewU, modelViewU; // IDs for uniform variables (from glGetUniformLocation)
 
 static float viewDist = 7.5; // Distance from the camera to the centre of the scene
 static float camRotSidewaysDeg=0; // rotates the camera sideways around the centre
@@ -274,6 +274,7 @@ void init( void )
     vTexCoord = glGetAttribLocation( shaderProgram, "vTexCoord" ); CheckError();
 
     projectionU = glGetUniformLocation(shaderProgram, "Projection");
+    viewU = glGetUniformLocation(shaderProgram, "View");
     modelViewU = glGetUniformLocation(shaderProgram, "ModelView");
 
     // Objects 0, and 1 are the ground and the first light.
@@ -333,6 +334,7 @@ void drawMesh(SceneObject sceneObj) {
     mat4 model = Translate(sceneObj.loc)*RotateZ(sceneObj.angles[2])*RotateY(sceneObj.angles[1])*RotateX(sceneObj.angles[0])*Scale(sceneObj.scale);
 
     // Set the model-view matrix for the shaders
+    glUniformMatrix4fv( viewU, 1, GL_TRUE, view );
     glUniformMatrix4fv( modelViewU, 1, GL_TRUE, view * model );
 
     // Activate the VAO for a mesh, loading if needed.

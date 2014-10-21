@@ -14,6 +14,8 @@ uniform vec3 AmbientProduct2, DiffuseProduct2, SpecularProduct2;
 uniform float Shininess;
 uniform float Alpha;
 
+uniform mat4 View;
+
 void
 main()
 {
@@ -22,7 +24,11 @@ main()
 
     vec3 E = normalize(-pos);   // Direction to the eye/camera
 
-    // The vector to the light from the vertex    
+    //---------
+    // Light 1
+    //---------
+
+    // The vector to the light from the vertex
     vec3 Lvec1 = LightPosition1.xyz - pos;
 
     float Ldist1 = length(Lvec1); // Distance from light source
@@ -45,25 +51,32 @@ main()
       specular1 = vec3(0.0, 0.0, 0.0);
     }
 
-    // The vector to the light from the vertex    
-    vec3 Lvec2 = LightPosition2.xyz;
+    //---------
+    // Light 2
+    //---------
+
+    // The vector to the light from the origin
+    vec3 Lvec2 = (LightPosition2 - (View * vec4(0.0, 0.0, 0.0, 1.0))).xyz;
+
+    // float Ldist2 = length(Lvec2); // Distance from light source
+    // float Lscale2 = 1.0 / (Ldist2 * Ldist2); // Light scaling factor
 
     vec3 L2 = normalize(Lvec2);   // Direction to the light source
-    vec3 H2 = normalize(L2 + E);  // Halfway vector
+    vec3 H2 = normalize(L2);  // Halfway vector
 
     // Compute terms in the illumination equation
     vec3 ambient2 = AmbientProduct2;
 
-    float Kd2 = max(dot(Lvec2, N), 0.0);
-    vec3  diffuse2 = Kd2 * DiffuseProduct2;
+    float Kd2 = max(dot(L2, N), 0.0);
+    vec3  diffuse2 = Kd2 * DiffuseProduct2; // * Lscale2;
 
     float Ks2 = pow(max(dot(N, H2), 0.0), Shininess);
     float Si2 = dot(SpecularProduct2, vec3(0.33, 0.33, 0.33));
-    vec3  specular2 = Ks2 * vec3(Si2, Si2, Si2);
+    vec3  specular2 = Ks2 * vec3(Si2, Si2, Si2); // * Lscale2;
     
     if( dot(L2, N) < 0.0 ) {
       specular2 = vec3(0.0, 0.0, 0.0);
-    }   
+    }
 
     vec4 color;
 
@@ -71,6 +84,6 @@ main()
     color.a = 1.0;
 
     fColor = color * texture2D( texture, texCoord * 2.0 );
-    fColor.rgb = fColor.rgb + specular1 + specular2;
+    fColor.rgb = fColor.rgb + specular1;
     fColor.a = Alpha;
 }
