@@ -551,6 +551,7 @@ static void makeMenu() {
   glutAddMenuEntry("R/G/B/All Light 2",81);
 
   selectMenuId = glutCreateMenu(selectMenu);
+  glutAddMenuEntry("Ground", 0);
   glutAddMenuEntry("3", 3);
 
   glutCreateMenu(mainmenu);
