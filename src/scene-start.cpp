@@ -25,7 +25,7 @@ GLuint shaderProgram; // The number identifying the GLSL shader program
 GLuint vPosition, vNormal, vTexCoord; // IDs for vshader input vars (from glGetAttribLocation)
 GLuint projectionU, viewU, modelViewU; // IDs for uniform variables (from glGetUniformLocation)
 
-static float viewDist = 7.5; // Distance from the camera to the centre of the scene
+static float viewDist = 0; // Distance from the camera to the centre of the scene
 static float camRotSidewaysDeg=0; // rotates the camera sideways around the centre
 static float camRotUpAndOverDeg=20; // rotates the camera up and over the centre.
 
@@ -78,6 +78,22 @@ int toolObj = -1;  // The object currently being modified
 
 int selectMenuId;
 
+
+// -----Camera Fly Toggles-------
+static float fly = 0.0;
+static float yaw = 0.0;
+static float pitch = 0.0;
+static float roll = 0.0;
+float flyForward = 0.0;
+float flyBack = 0.0;
+float pitchForward = 0.0;
+float pitchBack = 0.0;
+float flyLeft = 0.0;
+float flyRight = 0.0;
+float yawLeft = 0.0;
+float yawRight = 0.0;
+float rollLeft = 0.0;
+float rollRight = 0.0;
 
 //------------------------------------------------------------
 // Loads a texture by number, and binds it for later use.  
@@ -354,6 +370,17 @@ void display(void) {
     // Set the view matrix.  To start with this just moves the camera backwards.  You'll need to
     // add appropriate rotations.
 
+    fly += flyLeft * 0.1;
+    fly -= flyRight * 0.1;
+    roll += rollLeft;
+    roll -= rollRight;
+    yaw -= yawLeft;
+    yaw += yawRight;
+    pitch += pitchBack;
+    pitch -= pitchForward;
+    viewDist += flyBack * 0.1;
+    viewDist -= flyForward * 0.1;
+
     view = Translate(0.0, 0.0, -viewDist) * RotateX(camRotUpAndOverDeg) * RotateY(camRotSidewaysDeg);
 
     SceneObject lightObj1 = sceneObjs[1]; 
@@ -594,15 +621,116 @@ static void makeMenu() {
   glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
+//--------------------
+void
+straighten() {
+  pitch = 0;
+  roll = 0;
+  camRotUpAndOverDeg = 0;
+  yaw = 0;
+}
+
 
 //----------------------------------------------------------------------------
 
 void
-keyboard( unsigned char key, int x, int y )
+normalKeyboardDown( unsigned char key, int x, int y )
 {
     switch ( key ) {
-    case 033:
+    case 97:
+        flyLeft = 1;
+        break;
+    case 100:
+        flyRight = 1;
+        break;
+    case 119:
+        flyForward = 1;
+        break;
+    case 115:
+        flyBack = 1;
+        break;
+    case 99:
+        rollLeft = 1;
+        break;
+    case 122:
+        rollRight = 1;
+        break;
+    case 32:
+        straighten();
+        break;
+    case 27:
         exit( EXIT_SUCCESS );
+        break;
+    }
+}
+
+
+//----------------------------------------------------------------------------
+
+void
+specialKeyboardDown( int key, int x, int y )
+{
+    switch ( key ) {
+    case GLUT_KEY_LEFT:
+        yawLeft = 1;
+        break;
+    case GLUT_KEY_RIGHT:
+        yawRight = 1;
+        break;
+    case GLUT_KEY_UP:
+        pitchForward = 1;
+        break;
+    case GLUT_KEY_DOWN:
+        pitchBack = 1;
+        break;
+    }
+}
+
+//----------------------------------------------------------------------------
+
+void
+normalKeyboardUp( unsigned char key, int x, int y )
+{
+    switch ( key ) {
+    case 97:
+        flyLeft = 0;
+        break;
+    case 100:
+        flyRight = 0;
+        break;
+    case 119:
+        flyForward = 0;
+        break;
+    case 115:
+        flyBack = 0;
+        break;
+    case 99:
+        rollLeft = 0;
+        break;
+    case 122:
+        rollRight = 0;
+        break;
+    }
+}
+
+
+//----------------------------------------------------------------------------
+
+void
+specialKeyboardUp( int key, int x, int y )
+{
+    switch ( key ) {
+    case GLUT_KEY_LEFT:
+        yawLeft = 0;
+        break;
+    case GLUT_KEY_RIGHT:
+        yawRight = 0;
+        break;
+    case GLUT_KEY_UP:
+        pitchForward = 0;
+        break;
+    case GLUT_KEY_DOWN:
+        pitchBack = 0;
         break;
     }
 }
@@ -688,7 +816,10 @@ int main( int argc, char* argv[] )
     init(); CheckError(); // Use CheckError after an OpenGL command to print any errors.
 
     glutDisplayFunc(display);
-    glutKeyboardFunc(keyboard);
+    glutKeyboardFunc(normalKeyboardDown);
+    glutSpecialFunc(specialKeyboardDown);
+    glutKeyboardUpFunc(normalKeyboardUp);
+    glutSpecialUpFunc(specialKeyboardUp); 
     glutIdleFunc(idle);
 
     glutMouseFunc( mouseClickOrScroll );
