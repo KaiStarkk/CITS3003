@@ -78,22 +78,25 @@ int toolObj = -1;  // The object currently being modified
 
 int selectMenuId;
 
+// -----Camera strafe Toggles-------
+int gameMode = 0;
 
-// -----Camera Fly Toggles-------
-static float fly = 0.0;
 static float yaw = 0.0;
 static float pitch = 0.0;
-static float roll = 0.0;
-float flyForward = 0.0;
-float flyBack = 0.0;
-float pitchForward = 0.0;
-float pitchBack = 0.0;
-float flyLeft = 0.0;
-float flyRight = 0.0;
+static float dx = 0.0;
+static float dy = -1;
+static float dz = 0.0;
+int gameFOV = 65;
+float runForward = 0.0;
+float runBack = 0.0;
+float pitchUp = 0.0;
+float pitchDown = 0.0;
+float strafeLeft = 0.0;
+float strafeRight = 0.0;
 float yawLeft = 0.0;
 float yawRight = 0.0;
-float rollLeft = 0.0;
-float rollRight = 0.0;
+float climb = 0.0;
+float descend = 0.0;
 
 //------------------------------------------------------------
 // Loads a texture by number, and binds it for later use.  
@@ -195,14 +198,28 @@ static void mouseClickOrScroll(int button, int state, int x, int y) {
     else if(button==GLUT_MIDDLE_BUTTON && state==GLUT_UP) deactivateTool();
 
     else if (button == 3) { // scroll up
-        viewDist = (viewDist < 0.0 ? viewDist : viewDist*0.8) - 0.05;
+        if (gameMode) {
+            gameFOV -= 5;
+            projection = Perspective(gameFOV, (float)windowWidth/(float)windowHeight, 0.1, 5.0);
+        } else {
+            viewDist = (viewDist < 0.0 ? viewDist : viewDist*0.8) - 0.05;
+        }
     }
     else if(button == 4) { // scroll down
-       viewDist = (viewDist < 0.0 ? viewDist : viewDist*1.25) + 0.05;
+        if (gameMode) {
+            gameFOV += 5;
+            projection = Perspective(gameFOV, (float)windowWidth/(float)windowHeight, 0.1, 5.0);
+        } else {
+            viewDist = (viewDist < 0.0 ? viewDist : viewDist*1.25) + 0.05;
+        }
     }
 }
 
 static void mousePassiveMotion(int x, int y) {
+    if (gameMode) {
+        yaw += (gameFOV/300.0f)*(x - mouseX);
+        pitch += (gameFOV/300.0f)*(y - mouseY);
+    }
     mouseX=x;
     mouseY=y;
 }
@@ -212,18 +229,35 @@ mat2 camRotZ() { return rotZ(-camRotSidewaysDeg) * mat2(10.0, 0, 0, -10.0); }
 
 
 //---- callback functions for doRotate below and later
-static void adjustCamrotsideViewdist(vec2 cv)
-{   //cout << cv << endl;   // Debugging
-    camRotSidewaysDeg+=cv[0]; viewDist+=cv[1]; }
+static void adjustCamrotsideViewdist(vec2 cv) {
+    //cout << cv << endl;   // Debugging
+    if (!gameMode)  {
+        camRotSidewaysDeg+=cv[0]; 
+        viewDist+=cv[1]; 
+    }
+}
 
-static void adjustcamSideUp(vec2 su)
-  { camRotSidewaysDeg+=su[0]; camRotUpAndOverDeg+=su[1]; }
+static void adjustcamSideUp(vec2 su) { 
+    if (!gameMode)  {
+        camRotSidewaysDeg+=su[0];
+        camRotUpAndOverDeg+=su[1];
+    }
+}
   
-static void adjustLocXZ(vec2 xz) 
-  { sceneObjs[toolObj].loc[0]+=xz[0];  sceneObjs[toolObj].loc[2]+=xz[1]; }
+static void adjustLocXZ(vec2 xz) { 
+    if (!gameMode)  {
+        sceneObjs[toolObj].loc[0]+=xz[0];
+        sceneObjs[toolObj].loc[2]+=xz[1];
+    }
+}
 
 static void adjustScaleY(vec2 sy) 
-  { sceneObjs[toolObj].scale+=sy[0];  sceneObjs[toolObj].loc[1]+=sy[1]; }
+{ 
+    if (!gameMode)  {
+        sceneObjs[toolObj].scale+=sy[0];
+        sceneObjs[toolObj].loc[1]+=sy[1];
+    }
+}
 
 //------Set the mouse buttons to rotate the camera around the centre of the scene. 
 static void doRotate() {
@@ -363,6 +397,12 @@ void drawMesh(SceneObject sceneObj) {
 
 void display(void) {
     numDisplayCalls++;
+    if (gameFOV < 20) {
+        gameFOV = 20;
+    }
+    if (gameFOV > 90) {
+        gameFOV = 90;
+    }
 
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     CheckError(); // May report a harmless GL_INVALID_OPERATION with GLEW on the first frame
@@ -370,18 +410,41 @@ void display(void) {
     // Set the view matrix.  To start with this just moves the camera backwards.  You'll need to
     // add appropriate rotations.
 
-    fly += flyLeft * 0.1;
-    fly -= flyRight * 0.1;
-    roll += rollLeft;
-    roll -= rollRight;
-    yaw -= yawLeft;
-    yaw += yawRight;
-    pitch += pitchBack;
-    pitch -= pitchForward;
-    viewDist += flyBack * 0.1;
-    viewDist -= flyForward * 0.1;
+    if(gameMode) {
 
-    view = Translate(0.0, 0.0, -viewDist) * RotateX(camRotUpAndOverDeg) * RotateY(camRotSidewaysDeg);
+        if (runForward) {
+            dx -= sin(yaw*0.0174532925);
+            dz += cos(yaw*0.0174532925);
+        }
+        if (runBack) {
+            dx += sin(yaw*0.0174532925);
+            dz -= cos(yaw*0.0174532925);
+        }
+        if (strafeRight) {
+            dz -= sin(yaw*0.0174532925);
+            dx -= cos(yaw*0.0174532925);
+        }
+        if (strafeLeft) {
+            dz += sin(yaw*0.0174532925);
+            dx += cos(yaw*0.0174532925);
+        }
+        if (climb) {
+            dy -= 0.001;
+        }
+        if (descend) {
+            dy += 0.001;
+        }
+
+        yaw -= yawLeft * 0.25;
+        yaw += yawRight * 0.25;
+        pitch -= pitchUp * 0.25;
+        pitch += pitchDown * 0.25;
+
+        view = Translate(0.0, 0.0, 1) * RotateX(pitch) * RotateY(yaw) * Translate(dx*0.005, dy, dz*0.005);
+
+    } else {
+        view = Translate(0.0, 0.0, -viewDist) * RotateX(camRotUpAndOverDeg) * RotateY(camRotSidewaysDeg);
+    }
 
     SceneObject lightObj1 = sceneObjs[1]; 
     vec4 lightPosition1 = view * lightObj1.loc;
@@ -621,15 +684,6 @@ static void makeMenu() {
   glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
-//--------------------
-void
-straighten() {
-  pitch = 0;
-  roll = 0;
-  camRotUpAndOverDeg = 0;
-  yaw = 0;
-}
-
 
 //----------------------------------------------------------------------------
 
@@ -638,28 +692,16 @@ normalKeyboardDown( unsigned char key, int x, int y )
 {
     switch ( key ) {
     case 97:
-        flyLeft = 1;
+        strafeLeft = 1;
         break;
     case 100:
-        flyRight = 1;
+        strafeRight = 1;
         break;
     case 119:
-        flyForward = 1;
+        runForward = 1;
         break;
     case 115:
-        flyBack = 1;
-        break;
-    case 99:
-        rollLeft = 1;
-        break;
-    case 122:
-        rollRight = 1;
-        break;
-    case 32:
-        straighten();
-        break;
-    case 27:
-        exit( EXIT_SUCCESS );
+        runBack = 1;
         break;
     }
 }
@@ -678,10 +720,16 @@ specialKeyboardDown( int key, int x, int y )
         yawRight = 1;
         break;
     case GLUT_KEY_UP:
-        pitchForward = 1;
+        pitchUp = 1;
         break;
     case GLUT_KEY_DOWN:
-        pitchBack = 1;
+        pitchDown = 1;
+        break;
+    case GLUT_KEY_PAGE_UP:
+        climb = 1;
+        break;
+    case GLUT_KEY_PAGE_DOWN:
+        descend = 1;
         break;
     }
 }
@@ -691,24 +739,36 @@ specialKeyboardDown( int key, int x, int y )
 void
 normalKeyboardUp( unsigned char key, int x, int y )
 {
+
+    float fov = 20.0;
+
     switch ( key ) {
     case 97:
-        flyLeft = 0;
+        strafeLeft = 0;
         break;
     case 100:
-        flyRight = 0;
+        strafeRight = 0;
         break;
     case 119:
-        flyForward = 0;
+        runForward = 0;
         break;
     case 115:
-        flyBack = 0;
+        runBack = 0;
         break;
-    case 99:
-        rollLeft = 0;
+    case 32:
+        gameMode = 1 - gameMode;
+        if (windowWidth < windowHeight) {
+          fov *= (float)windowHeight / (float)windowWidth;
+        }
+
+        if (gameMode) {
+            projection = Perspective(gameFOV, (float)windowWidth/(float)windowHeight, 0.1, 5.0);
+        } else {
+            projection = Perspective(fov, (float)windowWidth/(float)windowHeight, 0.1, 10.0);
+        }
         break;
-    case 122:
-        rollRight = 0;
+    case 27:
+        exit( EXIT_SUCCESS );
         break;
     }
 }
@@ -727,10 +787,16 @@ specialKeyboardUp( int key, int x, int y )
         yawRight = 0;
         break;
     case GLUT_KEY_UP:
-        pitchForward = 0;
+        pitchUp = 0;
         break;
     case GLUT_KEY_DOWN:
-        pitchBack = 0;
+        pitchDown = 0;
+        break;
+    case GLUT_KEY_PAGE_UP:
+        climb = 0;
+        break;
+    case GLUT_KEY_PAGE_DOWN:
+        descend = 0;
         break;
     }
 }
@@ -760,7 +826,11 @@ void reshape(int width, int height) {
     //   - when the width is less than the height, the view should adjust so that the same part
     //     of the scene is visible across the width of the window.
 
-    projection = Perspective(fov, (float)width/(float)height, 0.0005, 20.0);
+    if (gameMode) {
+        projection = Perspective(80, (float)width/(float)height, 0.1, 5.0);
+    } else {
+        projection = Perspective(fov, (float)width/(float)height, 0.1, 10.0);
+    }
 }
 
 void timer(int unused)
