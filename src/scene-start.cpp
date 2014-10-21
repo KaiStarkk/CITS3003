@@ -299,9 +299,11 @@ void init( void )
 
     // We need to enable the depth test to discard fragments that
     // are behind previously drawn fragments for the same pixel.
+    glEnable (GL_DEPTH_TEST);
+
+    // Enable alpha blending.
     glEnable (GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable (GL_DEPTH_TEST);
 
     doRotate(); // Start in camera rotate mode.
     glClearColor( 0.0, 0.0, 0.0, 1.0 ); /* black background */
@@ -394,12 +396,6 @@ void display(void) {
 static void objectMenu(int id) {
   deactivateTool();
   addObject(id);
-
-  // Add object to select menu.
-  char label[4];
-  sprintf(label, "%d", currObject);
-  glutSetMenu(selectMenuId);
-  glutAddMenuEntry(label, currObject);
 }
 
 static void texMenu(int id) {
@@ -509,7 +505,19 @@ static void materialMenu(int id) {
 }
 
 static void selectMenu(int id) {
-  toolObj = currObject = id;
+  if (id == 2) {
+    toolObj++;
+
+    if (toolObj == nObjects) {
+      toolObj = 0;
+    }
+  } else {
+    if (toolObj == 0) {
+      toolObj = nObjects - 1;
+    } else {
+      toolObj--;
+    }
+  }
 }
 
 static void adjustAngleYX(vec2 angle_yx) 
@@ -542,12 +550,6 @@ static void mainmenu(int id) {
         sceneObjs[nObjects] = sceneObjs[currObject];
 
         toolObj = currObject = nObjects++;
-
-        // Add object to select menu.
-        char label[4];
-        sprintf(label, "%d", currObject);
-        glutSetMenu(selectMenuId);
-        glutAddMenuEntry(label, currObject);
     }
     if(id == 99) exit(0);
 }
@@ -570,8 +572,8 @@ static void makeMenu() {
   glutAddMenuEntry("R/G/B/All Light 2",81);
 
   selectMenuId = glutCreateMenu(selectMenu);
-  glutAddMenuEntry("Ground", 0);
-  glutAddMenuEntry("3", 3);
+  glutAddMenuEntry("Previous Object", 1);
+  glutAddMenuEntry("Next Object", 2);
 
   glutCreateMenu(mainmenu);
   glutAddMenuEntry("Rotate/Move Camera",50);
