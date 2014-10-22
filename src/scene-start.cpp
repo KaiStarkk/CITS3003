@@ -11,7 +11,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-GLint windowHeight=640, windowWidth=960;
+GLint windowHeight=640, windowWidth=960, prevWindowHeight=640, prevWindowWidth=960;
 
 // gnatidread.cpp is the CITS3003 "Graphics n Animation Tool Interface & Data Reader" code
 // This file contains parts of the code that you shouldn't need to modify (but, you can).
@@ -86,7 +86,7 @@ float fov = 20.0;
 // ---------------------------------------------
 // Game mode can be activated by selecting
 // the appropriate item from the right click
-// menu. 
+// menu. It can also be toggled with the 'g' key. 
 //
 // Game mode is the individual additional 
 // functionality for Kieran in project part 1.
@@ -101,6 +101,10 @@ float fov = 20.0;
 //                      (camera/head tilt)
 //        mouse wheel - dynamic fov change
 //                     (binoculars / gun scope)
+//                 v* - toggle vsync
+//                 f* - toggle fullscreen
+//
+// * also works in normal mode
 // 
 // The arrow keys also perform head movement
 // for machines with no point and click input.
@@ -110,12 +114,21 @@ float fov = 20.0;
 // ---------------------------------------------
 
 int gameMode = 0;
+bool vsync = true;
+bool fullscreen = false;
+int Hz = 60; // monitor refresh rate for vsync
 
+const float turnScale = 0.1;
+const float mouseTurnScale = 0.2;
+const float moveScale = 0.003;
+const float gravity = 0.00004;
+const float impulse = 0.01;
 static float yaw = 0.0;
 static float pitch = 0.0;
 static float dx = 0.0;
-static float dy = -1;
+static float dy = 1;
 static float dz = 0.0;
+static float inertia = impulse;
 int gameFOV = 65;
 bool runForward = false;
 bool runBack = false;
@@ -126,6 +139,8 @@ bool strafeRight = false;
 bool yawLeft = false;
 bool yawRight = false;
 bool jump = false;
+int t = 0; // set in display: = glutGet(GLUT_ELAPSED_TIME);
+int dt = 0;
 
 // ------------------------------------------------------------------------------------------
 // Reshape is used in many aspects of the game mode operation. A function signature could be
@@ -177,6 +192,19 @@ static void switchMode() {
         gameMode = false;
     }
     reshape(windowWidth, windowHeight);
+}
+
+static void toggleFullScreen() {
+    if(!fullscreen){
+        prevWindowWidth = windowWidth;
+        prevWindowHeight = windowHeight;
+        glutFullScreen();
+        fullscreen = true;
+    } else if(fullscreen){
+        glutReshapeWindow(prevWindowWidth, prevWindowHeight);
+        reshape(prevWindowWidth, prevWindowHeight);
+        fullscreen = false;
+    }
 }
 
 // ------------------------------------------------------------
@@ -276,7 +304,6 @@ static void mouseClickOrScroll(int button, int state, int x, int y) {
          if(glutGetModifiers()!=GLUT_ACTIVE_SHIFT) activateTool(button);
          else activateTool(GLUT_MIDDLE_BUTTON);
     }
-    else if(button==GLUT_RIGHT_BUTTON && gameMode) switchMode();
     else if(button==GLUT_LEFT_BUTTON && state == GLUT_UP) deactivateTool();
     else if(button==GLUT_MIDDLE_BUTTON && state==GLUT_DOWN) { activateTool(button); }
     else if(button==GLUT_MIDDLE_BUTTON && state==GLUT_UP) deactivateTool();
@@ -304,8 +331,8 @@ static void mousePassiveMotion(int x, int y) {
         if(mouseX < 50 || mouseX > windowWidth - 50 || mouseY < 50 || mouseY > windowHeight - 50) {
             glutWarpPointer(windowWidth/2, windowHeight/2);
         } else {
-            yaw += 2*(gameFOV/300.0f)*(x - mouseX);
-            pitch += 2*(gameFOV/300.0f)*(y - mouseY);
+            yaw += (gameFOV/300.0f)*(x - mouseX) * mouseTurnScale;
+            pitch += (gameFOV/300.0f)*(y - mouseY) * mouseTurnScale;
         }
     }
     mouseX=x;
@@ -486,6 +513,10 @@ void drawMesh(SceneObject sceneObj) {
 void display(void) {
     numDisplayCalls++;
 
+    dt = glutGet(GLUT_ELAPSED_TIME) - t;
+    if(vsync && dt < 1000/Hz) return;
+    t = glutGet(GLUT_ELAPSED_TIME);
+
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     CheckError(); // May report a harmless GL_INVALID_OPERATION with GLEW on the first frame
 
@@ -495,29 +526,36 @@ void display(void) {
     if(gameMode) {
 
         if (runForward) {
-            dx -= sin(yaw*0.0174532925);
-            dz += cos(yaw*0.0174532925);
+            dx -= sin(yaw*0.0174532925) * moveScale * dt;
+            dz += cos(yaw*0.0174532925) * moveScale * dt;
         }
         if (runBack) {
-            dx += sin(yaw*0.0174532925);
-            dz -= cos(yaw*0.0174532925);
+            dx += sin(yaw*0.0174532925) * moveScale * dt;
+            dz -= cos(yaw*0.0174532925) * moveScale * dt;
         }
         if (strafeRight) {
-            dz -= sin(yaw*0.0174532925);
-            dx -= cos(yaw*0.0174532925);
+            dz -= sin(yaw*0.0174532925) * moveScale * dt;
+            dx -= cos(yaw*0.0174532925) * moveScale * dt;
         }
         if (strafeLeft) {
-            dz += sin(yaw*0.0174532925);
-            dx += cos(yaw*0.0174532925);
-        }
-        if (jump) {
-            jump = 0;
+            dz += sin(yaw*0.0174532925) * moveScale * dt;
+            dx += cos(yaw*0.0174532925) * moveScale * dt;
         }
 
-        yaw -= yawLeft * 0.25f;
-        yaw += yawRight * 0.25f;
-        pitch -= pitchUp * 0.25f;
-        pitch += pitchDown * 0.25f;
+        if (jump) {
+            dy += inertia * dt;
+            inertia -= gravity * dt;
+            if (dy < 1) {
+                jump = false;
+                dy = 1;
+                inertia = impulse;
+            }
+        }
+
+        yaw -= yawLeft * turnScale * dt;
+        yaw += yawRight * turnScale * dt;
+        pitch -= pitchUp * turnScale * dt;
+        pitch += pitchDown * turnScale * dt;
 
         if (pitch > 90) {
             pitch = 90;
@@ -525,7 +563,7 @@ void display(void) {
             pitch = -90;
         }
 
-        view = Translate(0.0, 0.0, 1) * RotateX(pitch) * RotateY(yaw) * Translate(dx*0.005, dy, dz*0.005);
+        view = Translate(0.0, 0.0, 1) * RotateX(pitch) * RotateY(yaw) * Translate(dx, -dy, dz);
 
     } else {
         view = Translate(0.0, 0.0, 1-viewDist) * RotateX(camRotUpAndOverDeg) * RotateY(camRotSidewaysDeg);
@@ -780,17 +818,17 @@ void
 normalKeyboardDown( unsigned char key, int x, int y )
 {
     switch ( key ) {
-    case 97:
-        strafeLeft = true;
-        break;
-    case 100:
-        strafeRight = true;
-        break;
-    case 119:
+    case 'w':
         runForward = true;
         break;
-    case 115:
+    case 'a':
+        strafeLeft = true;
+        break;
+    case 's':
         runBack = true;
+        break;
+    case 'd':
+        strafeRight = true;
         break;
     }
 }
@@ -802,17 +840,17 @@ void
 specialKeyboardDown( int key, int x, int y )
 {
     switch ( key ) {
-    case GLUT_KEY_LEFT:
-        yawLeft = true;
-        break;
-    case GLUT_KEY_RIGHT:
-        yawRight = true;
-        break;
     case GLUT_KEY_UP:
         pitchUp = true;
         break;
     case GLUT_KEY_DOWN:
         pitchDown = true;
+        break;
+    case GLUT_KEY_LEFT:
+        yawLeft = true;
+        break;
+    case GLUT_KEY_RIGHT:
+        yawRight = true;
         break;
     case GLUT_KEY_PAGE_UP:
         if (gameMode) {
@@ -839,19 +877,28 @@ void
 normalKeyboardUp( unsigned char key, int x, int y )
 {
     switch ( key ) {
-    case 97:
-        strafeLeft = false;
-        break;
-    case 100:
-        strafeRight = false;
-        break;
-    case 119:
+    case 'w':
         runForward = false;
         break;
-    case 115:
+    case 'a':
+        strafeLeft = false;
+        break;
+    case 's':
         runBack = false;
         break;
-    case 32:
+    case 'd':
+        strafeRight = false;
+        break;
+    case 'v':
+        vsync = !vsync;
+        break;
+    case 'g':
+        switchMode();
+        break;
+    case 'f':
+        toggleFullScreen();
+        break;
+    case ' ':
         jump = true;
         break;
     case 27:
@@ -892,7 +939,16 @@ void idle( void ) {
 void timer(int unused)
 {
     char title[256];
-    sprintf(title, "%s %s: %d Frames Per Second @ %d x %d",
+    char prefix[13];
+    if (vsync) {
+        sprintf(prefix, "VSYNC ON -- ");
+        if (numDisplayCalls > Hz) {
+            numDisplayCalls = Hz;
+        }
+    } else {
+        sprintf(prefix, "VSYNC OFF -- ");
+    }
+    sprintf(title, "%s %s %s: %d Frames Per Second @ %d x %d", prefix,
             lab, programName, numDisplayCalls, windowWidth, windowHeight );
 
     glutSetWindowTitle(title);
