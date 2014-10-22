@@ -25,21 +25,22 @@ GLuint shaderProgram; // The number identifying the GLSL shader program
 GLuint vPosition, vNormal, vTexCoord; // IDs for vshader input vars (from glGetAttribLocation)
 GLuint projectionU, viewU, modelViewU; // IDs for uniform variables (from glGetUniformLocation)
 
-static float viewDist = 0; // Distance from the camera to the centre of the scene
+static float viewDist = 20; // Distance from the camera to the centre of the scene
 static float camRotSidewaysDeg=0; // rotates the camera sideways around the centre
-static float camRotUpAndOverDeg=20; // rotates the camera up and over the centre.
+static float camRotUpAndOverDeg=10; // rotates the camera up and over the centre.
 
 mat4 projection; // Projection matrix - set in the reshape function
 mat4 view; // View matrix - set in the display function.
 
 // These are used to set the window title
-char lab[] = "Project1";
+char lab[] = "Project 1";
 char *programName = NULL; // Set in main 
 int numDisplayCalls = 0; // Used to calculate the number of frames per second
 
 // -----Meshes----------------------------------------------------------
 // Uses the type aiMesh from ../../assimp--3.0.1270/include/assimp/mesh.h
 //                      (numMeshes is defined in gnatidread.h)
+// ---------------------------------------------------------------------
 aiMesh* meshes[numMeshes]; // For each mesh we have a pointer to the mesh to draw
 GLuint vaoIDs[numMeshes]; // and a corresponding VAO ID from glGenVertexArrays
 
@@ -49,7 +50,7 @@ texture* textures[numTextures]; // An array of texture pointers - see gnatidread
 GLuint textureIDs[numTextures]; // Stores the IDs returned by glGenTextures
 
 
-// ------Scene Objects----------------------------------------------------
+// ------Scene Objects--------------------------------------------------------------------------------------
 //
 // For each object in a scene we store the following
 // Note: the following is exactly what the sample solution uses, you can do things differently if you want.
@@ -78,7 +79,36 @@ int toolObj = -1;  // The object currently being modified
 
 int selectMenuId;
 
-// -----Camera strafe Toggles-------
+float fov = 20.0;
+
+// ---------------------------------------------
+//             Game mode variables
+// ---------------------------------------------
+// Game mode can be activated by selecting
+// the appropriate item from the right click
+// menu. 
+//
+// Game mode is the individual additional 
+// functionality for Kieran in project part 1.
+//
+// ================ Controls ===================
+//                  w - run forward 
+//                  a - strafe left 
+//                  s - run back 
+//                  d - strafe right 
+//              space - jump
+//              mouse - pitch and yaw
+//                      (camera/head tilt)
+//        mouse wheel - dynamic fov change
+//                     (binoculars / gun scope)
+// 
+// The arrow keys also perform head movement
+// for machines with no point and click input.
+// 
+// Page up and down also perform the fov change
+// (or zooming in normal mode).
+// ---------------------------------------------
+
 int gameMode = 0;
 
 static float yaw = 0.0;
@@ -87,19 +117,72 @@ static float dx = 0.0;
 static float dy = -1;
 static float dz = 0.0;
 int gameFOV = 65;
-float runForward = 0.0;
-float runBack = 0.0;
-float pitchUp = 0.0;
-float pitchDown = 0.0;
-float strafeLeft = 0.0;
-float strafeRight = 0.0;
-float yawLeft = 0.0;
-float yawRight = 0.0;
-float climb = 0.0;
-float descend = 0.0;
+bool runForward = false;
+bool runBack = false;
+bool pitchUp = false;
+bool pitchDown = false;
+bool strafeLeft = false;
+bool strafeRight = false;
+bool yawLeft = false;
+bool yawRight = false;
+bool jump = false;
 
-//------------------------------------------------------------
+// ------------------------------------------------------------------------------------------
+// Reshape is used in many aspects of the game mode operation. A function signature could be
+// declared, but ordering is more consistent with other parts of the program.
+// ------------------------------------------------------------------------------------------
+
+void reshape(int width, int height) {
+    windowWidth = width;
+    windowHeight = height;
+
+    if (gameFOV < 20) {
+        gameFOV = 20;
+    }
+    if (gameFOV > 90) {
+        gameFOV = 90;
+    }
+
+    glViewport(0, 0, width, height);
+
+    fov = 20;
+
+    if (width < height) {
+      fov *= (float)height / (float)width;
+    }
+
+    // You'll need to modify this so that the view is similar to that in the sample solution.
+    // In particular: 
+    //   - the view should include "closer" visible objects (slightly tricky)
+    //   - when the width is less than the height, the view should adjust so that the same part
+    //     of the scene is visible across the width of the window.
+
+    if (gameMode) {
+        projection = Perspective(gameFOV, (float)width/(float)height, 0.1, 5.0);
+    } else {
+        projection = Perspective(fov, (float)width/(float)height, 0.1, 10.0);
+    }
+}
+
+// --------------------------------------
+// Toggle between game modes.
+// --------------------------------------
+
+static void switchMode() {
+    if (!gameMode) {
+        glutSetCursor(GLUT_CURSOR_NONE); 
+        gameMode = true;
+    } else {
+        glutSetCursor(GLUT_CURSOR_INHERIT);
+        gameMode = false;
+    }
+    reshape(windowWidth, windowHeight);
+}
+
+// ------------------------------------------------------------
 // Loads a texture by number, and binds it for later use.  
+// ------------------------------------------------------------
+
 void loadTextureIfNotAlreadyLoaded(int i) {
     if(textures[i] != NULL) return; // The texture is already loaded.
 
@@ -193,6 +276,7 @@ static void mouseClickOrScroll(int button, int state, int x, int y) {
          if(glutGetModifiers()!=GLUT_ACTIVE_SHIFT) activateTool(button);
          else activateTool(GLUT_MIDDLE_BUTTON);
     }
+    else if(button==GLUT_RIGHT_BUTTON && gameMode) switchMode();
     else if(button==GLUT_LEFT_BUTTON && state == GLUT_UP) deactivateTool();
     else if(button==GLUT_MIDDLE_BUTTON && state==GLUT_DOWN) { activateTool(button); }
     else if(button==GLUT_MIDDLE_BUTTON && state==GLUT_UP) deactivateTool();
@@ -200,7 +284,7 @@ static void mouseClickOrScroll(int button, int state, int x, int y) {
     else if (button == 3) { // scroll up
         if (gameMode) {
             gameFOV -= 5;
-            projection = Perspective(gameFOV, (float)windowWidth/(float)windowHeight, 0.1, 5.0);
+            reshape(windowWidth, windowHeight);
         } else {
             viewDist = (viewDist < 0.0 ? viewDist : viewDist*0.8) - 0.05;
         }
@@ -208,7 +292,7 @@ static void mouseClickOrScroll(int button, int state, int x, int y) {
     else if(button == 4) { // scroll down
         if (gameMode) {
             gameFOV += 5;
-            projection = Perspective(gameFOV, (float)windowWidth/(float)windowHeight, 0.1, 5.0);
+            reshape(windowWidth, windowHeight);
         } else {
             viewDist = (viewDist < 0.0 ? viewDist : viewDist*1.25) + 0.05;
         }
@@ -217,8 +301,12 @@ static void mouseClickOrScroll(int button, int state, int x, int y) {
 
 static void mousePassiveMotion(int x, int y) {
     if (gameMode) {
-        yaw += (gameFOV/300.0f)*(x - mouseX);
-        pitch += (gameFOV/300.0f)*(y - mouseY);
+        if(mouseX < 50 || mouseX > windowWidth - 50 || mouseY < 50 || mouseY > windowHeight - 50) {
+            glutWarpPointer(windowWidth/2, windowHeight/2);
+        } else {
+            yaw += 2*(gameFOV/300.0f)*(x - mouseX);
+            pitch += 2*(gameFOV/300.0f)*(y - mouseY);
+        }
     }
     mouseX=x;
     mouseY=y;
@@ -233,7 +321,7 @@ static void adjustCamrotsideViewdist(vec2 cv) {
     //cout << cv << endl;   // Debugging
     if (!gameMode)  {
         camRotSidewaysDeg+=cv[0]; 
-        viewDist+=cv[1]; 
+        viewDist += cv[1]*10;
     }
 }
 
@@ -397,12 +485,6 @@ void drawMesh(SceneObject sceneObj) {
 
 void display(void) {
     numDisplayCalls++;
-    if (gameFOV < 20) {
-        gameFOV = 20;
-    }
-    if (gameFOV > 90) {
-        gameFOV = 90;
-    }
 
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     CheckError(); // May report a harmless GL_INVALID_OPERATION with GLEW on the first frame
@@ -428,22 +510,25 @@ void display(void) {
             dz += sin(yaw*0.0174532925);
             dx += cos(yaw*0.0174532925);
         }
-        if (climb) {
-            dy -= 0.001;
-        }
-        if (descend) {
-            dy += 0.001;
+        if (jump) {
+            jump = 0;
         }
 
-        yaw -= yawLeft * 0.25;
-        yaw += yawRight * 0.25;
-        pitch -= pitchUp * 0.25;
-        pitch += pitchDown * 0.25;
+        yaw -= yawLeft * 0.25f;
+        yaw += yawRight * 0.25f;
+        pitch -= pitchUp * 0.25f;
+        pitch += pitchDown * 0.25f;
+
+        if (pitch > 90) {
+            pitch = 90;
+        } else if (pitch < -90) {
+            pitch = -90;
+        }
 
         view = Translate(0.0, 0.0, 1) * RotateX(pitch) * RotateY(yaw) * Translate(dx*0.005, dy, dz*0.005);
 
     } else {
-        view = Translate(0.0, 0.0, -viewDist) * RotateX(camRotUpAndOverDeg) * RotateY(camRotSidewaysDeg);
+        view = Translate(0.0, 0.0, 1-viewDist) * RotateX(camRotUpAndOverDeg) * RotateY(camRotSidewaysDeg);
     }
 
     SceneObject lightObj1 = sceneObjs[1]; 
@@ -626,6 +711,9 @@ static void mainmenu(int id) {
         setToolCallbacks(adjustLocXZ, camRotZ(),
                          adjustScaleY, mat2(0.05, 0, 0, 10) );
     }
+    if(id == 45) {
+        switchMode();
+    }
     if(id == 50)
         doRotate();
     if(id == 55 && currObject>=0) {
@@ -668,6 +756,7 @@ static void makeMenu() {
   glutAddMenuEntry("Next Object", 2);
 
   glutCreateMenu(mainmenu);
+  glutAddMenuEntry("Toggle Game Mode",45);
   glutAddMenuEntry("Rotate/Move Camera",50);
   glutAddSubMenu("Add object", objectId);
   glutAddSubMenu("Select object", selectMenuId);
@@ -692,16 +781,16 @@ normalKeyboardDown( unsigned char key, int x, int y )
 {
     switch ( key ) {
     case 97:
-        strafeLeft = 1;
+        strafeLeft = true;
         break;
     case 100:
-        strafeRight = 1;
+        strafeRight = true;
         break;
     case 119:
-        runForward = 1;
+        runForward = true;
         break;
     case 115:
-        runBack = 1;
+        runBack = true;
         break;
     }
 }
@@ -714,22 +803,32 @@ specialKeyboardDown( int key, int x, int y )
 {
     switch ( key ) {
     case GLUT_KEY_LEFT:
-        yawLeft = 1;
+        yawLeft = true;
         break;
     case GLUT_KEY_RIGHT:
-        yawRight = 1;
+        yawRight = true;
         break;
     case GLUT_KEY_UP:
-        pitchUp = 1;
+        pitchUp = true;
         break;
     case GLUT_KEY_DOWN:
-        pitchDown = 1;
+        pitchDown = true;
         break;
     case GLUT_KEY_PAGE_UP:
-        climb = 1;
+        if (gameMode) {
+            gameFOV -= 20;
+            reshape(windowWidth, windowHeight);
+        } else {
+            viewDist = (viewDist < 0.0 ? viewDist : viewDist*0.8) - 0.05;
+        }
         break;
     case GLUT_KEY_PAGE_DOWN:
-        descend = 1;
+        if (gameMode) {
+            gameFOV += 20;
+            reshape(windowWidth, windowHeight);
+        } else {
+            viewDist = (viewDist < 0.0 ? viewDist : viewDist*1.25) + 0.05;
+        }
         break;
     }
 }
@@ -739,33 +838,21 @@ specialKeyboardDown( int key, int x, int y )
 void
 normalKeyboardUp( unsigned char key, int x, int y )
 {
-
-    float fov = 20.0;
-
     switch ( key ) {
     case 97:
-        strafeLeft = 0;
+        strafeLeft = false;
         break;
     case 100:
-        strafeRight = 0;
+        strafeRight = false;
         break;
     case 119:
-        runForward = 0;
+        runForward = false;
         break;
     case 115:
-        runBack = 0;
+        runBack = false;
         break;
     case 32:
-        gameMode = 1 - gameMode;
-        if (windowWidth < windowHeight) {
-          fov *= (float)windowHeight / (float)windowWidth;
-        }
-
-        if (gameMode) {
-            projection = Perspective(gameFOV, (float)windowWidth/(float)windowHeight, 0.1, 5.0);
-        } else {
-            projection = Perspective(fov, (float)windowWidth/(float)windowHeight, 0.1, 10.0);
-        }
+        jump = true;
         break;
     case 27:
         exit( EXIT_SUCCESS );
@@ -781,22 +868,16 @@ specialKeyboardUp( int key, int x, int y )
 {
     switch ( key ) {
     case GLUT_KEY_LEFT:
-        yawLeft = 0;
+        yawLeft = false;
         break;
     case GLUT_KEY_RIGHT:
-        yawRight = 0;
+        yawRight = false;
         break;
     case GLUT_KEY_UP:
-        pitchUp = 0;
+        pitchUp = false;
         break;
     case GLUT_KEY_DOWN:
-        pitchDown = 0;
-        break;
-    case GLUT_KEY_PAGE_UP:
-        climb = 0;
-        break;
-    case GLUT_KEY_PAGE_DOWN:
-        descend = 0;
+        pitchDown = false;
         break;
     }
 }
@@ -806,31 +887,6 @@ specialKeyboardUp( int key, int x, int y )
 
 void idle( void ) {
   glutPostRedisplay();
-}
-
-void reshape(int width, int height) {
-    windowWidth = width;
-    windowHeight = height;
-
-    glViewport(0, 0, width, height);
-
-    float fov = 20.0;
-
-    if (width < height) {
-      fov *= (float)height / (float)width;
-    }
-
-    // You'll need to modify this so that the view is similar to that in the sample solution.
-    // In particular: 
-    //   - the view should include "closer" visible objects (slightly tricky)
-    //   - when the width is less than the height, the view should adjust so that the same part
-    //     of the scene is visible across the width of the window.
-
-    if (gameMode) {
-        projection = Perspective(80, (float)width/(float)height, 0.1, 5.0);
-    } else {
-        projection = Perspective(fov, (float)width/(float)height, 0.1, 10.0);
-    }
 }
 
 void timer(int unused)
@@ -895,6 +951,9 @@ int main( int argc, char* argv[] )
     glutMouseFunc( mouseClickOrScroll );
     glutPassiveMotionFunc(mousePassiveMotion);
     glutMotionFunc( doToolUpdateXY );
+
+    glutSetKeyRepeat( GLUT_KEY_REPEAT_OFF ); // Cannot jump by holding, scope zooms in 
+                                             // levels as opposed to continuous (arbitrary).
  
     glutReshapeFunc( reshape );
     glutTimerFunc(1000, timer, 1);   CheckError();
