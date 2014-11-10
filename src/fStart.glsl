@@ -7,6 +7,8 @@ in vec3 N;
 out vec4 fColor;
 
 uniform sampler2D texture;
+uniform float texScale;
+
 uniform vec4 LightPosition1;
 uniform vec3 AmbientProduct1, DiffuseProduct1, SpecularProduct1;
 uniform vec4 LightPosition2;
@@ -83,7 +85,7 @@ main()
     color.rgb = globalAmbient + ambient1 + diffuse1 + ambient2 + diffuse2;
     color.a = 1.0;
 
-    fColor = color * texture2D( texture, texCoord * 2.0 );
+    fColor = color * texture2D( texture, texCoord * texScale );
     fColor.rgb = fColor.rgb + specular1;
     fColor.a = Alpha;
 }
