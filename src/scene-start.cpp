@@ -530,7 +530,7 @@ void init( void )
     addObject(0); // Square for the ground
     sceneObjs[0].loc = vec4(0.0, 0.0, 0.0, 1.0);
     sceneObjs[0].scale = 10.0;
-    sceneObjs[0].angles[0] = 270.0; // Rotate it.
+    sceneObjs[0].angles[0] = 90.0; // Rotate it.
     sceneObjs[0].texScale = 5.0; // Repeat the texture.
 
     addObject(55); // Sphere for the first light
@@ -591,9 +591,13 @@ void drawMesh(SceneObject sceneObj, float pose_time) {
     glBindVertexArray( vaoIDs[sceneObj.meshId] ); CheckError();
 
     int nBones = meshes[sceneObj.meshId]->mNumBones;
-    if(nBones == 0)  nBones = 1;
+    
+    if (nBones == 0) {
+        nBones = 1;
+    }
 
     mat4 boneTransforms[64];
+
     calculateAnimPose(meshes[sceneObj.meshId], scenes[sceneObj.meshId], 0, pose_time, boneTransforms);
     glUniformMatrix4fv(boneTransformsU, nBones, GL_TRUE, (const GLfloat *)boneTransforms);
 

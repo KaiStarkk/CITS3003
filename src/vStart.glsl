@@ -25,7 +25,7 @@ void main()
     // Transform position and normal with bone transform
     vec4 tPosition = boneTransform * vPosition;
     vec3 tNormal = (boneTransform * vec4(vNormal, 0.0)).xyz;
-
+    
     // Transform vertex position into eye coordinates
     pos = (ModelView * tPosition).xyz;
 
