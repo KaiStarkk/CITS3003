@@ -116,6 +116,10 @@ int toolObj = -1;  // The object currently being modified
 
 int selectMenuId;
 
+float animFrame = 0.0;
+float animDistance = 10.0;
+float animScale = 1.0;
+
 float fov = 20.0;
 
 // ---------------------------------------------
@@ -578,28 +582,43 @@ void drawMesh(SceneObject sceneObj, float pose_time) {
     // Set the projection matrix for the shaders
     glUniformMatrix4fv( projectionU, 1, GL_TRUE, projection );
 
+    // Activate the VAO for a mesh, loading if needed.
+    loadMeshIfNotAlreadyLoaded(sceneObj.meshId); CheckError();
+    glBindVertexArray( vaoIDs[sceneObj.meshId] ); CheckError();
+    int nBones = meshes[sceneObj.meshId]->mNumBones;
+
     // Set the model matrix - this should combine translation, rotation and scaling based on what's
     // in the sceneObj structure (see near the top of the program).
-    mat4 model = Translate(sceneObj.loc)*RotateZ(sceneObj.angles[2])*RotateY(sceneObj.angles[1])*RotateX(sceneObj.angles[0])*Scale(sceneObj.scale);
+
+    vec4 loc = sceneObj.loc;
+
+    // If model has bones, translate according to pose_time
+    if (nBones > 0) {
+        float animTranslate = fmod(pose_time, animDistance * 100.0) / 100.0;
+
+        if (animTranslate > (animDistance / 2.0)) {
+            animTranslate = animDistance - animTranslate;
+        }
+
+        animTranslate = animTranslate * animScale;
+
+        loc.x += animTranslate * sin(sceneObj.angles[1] * DegreesToRadians);
+        loc.z += animTranslate * cos(sceneObj.angles[1] * DegreesToRadians);
+    }
+
+    mat4 model = Translate(loc);
+    model = model * RotateY(sceneObj.angles[1]);
+    model = model * RotateZ(sceneObj.angles[2]);
+    model = model * RotateX(sceneObj.angles[0]);
+    model = model * Scale(sceneObj.scale);
 
     // Set the model-view matrix for the shaders
     glUniformMatrix4fv( viewU, 1, GL_TRUE, view );
     glUniformMatrix4fv( modelViewU, 1, GL_TRUE, view * model );
 
-    // Activate the VAO for a mesh, loading if needed.
-    loadMeshIfNotAlreadyLoaded(sceneObj.meshId); CheckError();
-    glBindVertexArray( vaoIDs[sceneObj.meshId] ); CheckError();
-
-    int nBones = meshes[sceneObj.meshId]->mNumBones;
-    
-    if (nBones == 0) {
-        nBones = 1;
-    }
-
     mat4 boneTransforms[64];
-
-    calculateAnimPose(meshes[sceneObj.meshId], scenes[sceneObj.meshId], 0, pose_time, boneTransforms);
-    glUniformMatrix4fv(boneTransformsU, nBones, GL_TRUE, (const GLfloat *)boneTransforms);
+    calculateAnimPose(meshes[sceneObj.meshId], scenes[sceneObj.meshId], 0, fmod(pose_time, 50.0), boneTransforms);
+    glUniformMatrix4fv(boneTransformsU, max(nBones, 1), GL_TRUE, (const GLfloat *)boneTransforms);
 
     glDrawElements(GL_TRIANGLES, meshes[sceneObj.meshId]->mNumFaces * 3, GL_UNSIGNED_INT, NULL); CheckError();
 }
@@ -613,7 +632,10 @@ void display(void) {
     // Note - this isn't true hardware vsync which communicates with the monitor,
     // (normally set in GPU config) though the improvement will remove a large amount of screen tearing.
     if(vsync && dt < 1000/Hz) return;
+
     numDisplayCalls++;
+    animFrame = animFrame + 1;
+
     t = glutGet(GLUT_ELAPSED_TIME);
 
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -706,7 +728,7 @@ void display(void) {
 
         glUniform1f(glGetUniformLocation(shaderProgram, "Shininess"), so.shine ); CheckError();
 
-        drawMesh(sceneObjs[i], (float) numDisplayCalls);
+        drawMesh(sceneObjs[i], animFrame);
     }
 
     glutSwapBuffers();
