@@ -836,6 +836,8 @@ static void selectMenu(int id) {
       toolObj--;
     }
   }
+
+  currObject = toolObj;
 }
 
 static void adjustAngleYX(vec2 angle_yx) 
