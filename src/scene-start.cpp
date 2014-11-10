@@ -118,7 +118,7 @@ int selectMenuId;
 
 float animFrame = 0.0;
 float animDistance = 10.0;
-float animScale = 1.0;
+float animSpeed = 10.0;
 
 float fov = 20.0;
 
@@ -594,13 +594,13 @@ void drawMesh(SceneObject sceneObj, float pose_time) {
 
     // If model has bones, translate according to pose_time
     if (nBones > 0) {
-        float animTranslate = fmod(pose_time, animDistance * 100.0) / 100.0;
+        float animProg = fmod(pose_time * animSpeed, 2000.0) / 2000.0;
 
-        if (animTranslate > (animDistance / 2.0)) {
-            animTranslate = animDistance - animTranslate;
+        if (animProg > 0.5) {
+            animProg = 1.0 - animProg;
         }
 
-        animTranslate = animTranslate * animScale;
+        float animTranslate = (animProg * 2.0 - 0.5) * animDistance;
 
         loc.x += animTranslate * sin(sceneObj.angles[1] * DegreesToRadians);
         loc.z += animTranslate * cos(sceneObj.angles[1] * DegreesToRadians);
@@ -872,6 +872,19 @@ static void adjustAngleYX(vec2 angle_yx)
 static void adjustAngleZTexscale(vec2 az_ts) 
   {  sceneObjs[currObject].angles[2]+=az_ts[0]; sceneObjs[currObject].texScale+=az_ts[1]; }
 
+static void adjustAnim(vec2 dist_speed) {
+    animDistance += dist_speed[0] * 10.0;
+
+    if (animDistance < 0.0) {
+        animDistance = 0.0;
+    }
+
+    animSpeed += dist_speed[1] * 50.0;
+
+    if (animSpeed < 0.0) {
+        animSpeed = 0.0;
+    }
+}
 
 static void mainmenu(int id) {
     deactivateTool();
@@ -900,6 +913,12 @@ static void mainmenu(int id) {
 
         toolObj = currObject = nObjects++;
     }
+
+    if(id == 65) {
+        setToolCallbacks(adjustAnim, mat2(1, 0, 0, 1),
+                         adjustAnim, mat2(1, 0, 0, 1));
+    }
+
     if(id == 99) exit(0);
 }
 
@@ -934,6 +953,7 @@ static void makeMenu() {
   glutAddMenuEntry("Unide object", 57);
   glutAddMenuEntry("Position/Scale", 41);
   glutAddMenuEntry("Rotation/Texture Scale", 55);
+  glutAddMenuEntry("Animation Distance/Speed", 65);
   glutAddSubMenu("Material", materialMenuId);
   glutAddSubMenu("Texture",texMenuId);
   glutAddSubMenu("Ground Texture",groundMenuId);
