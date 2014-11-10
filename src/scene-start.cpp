@@ -119,6 +119,7 @@ int selectMenuId;
 float animFrame = 0.0;
 float animDistance = 10.0;
 float animSpeed = 10.0;
+bool animSin = false;
 
 float fov = 20.0;
 
@@ -604,6 +605,13 @@ void drawMesh(SceneObject sceneObj, float pose_time) {
 
         loc.x += animTranslate * sin(sceneObj.angles[1] * DegreesToRadians);
         loc.z += animTranslate * cos(sceneObj.angles[1] * DegreesToRadians);
+
+        if (animSin) {
+            float strafe = sin(animProg * 360.0 * 5.0 * DegreesToRadians) * animDistance / 20.0;
+
+            loc.x += strafe * cos(sceneObj.angles[1] * DegreesToRadians);
+            loc.z += strafe * sin(sceneObj.angles[1] * DegreesToRadians);
+        }
     }
 
     mat4 model = Translate(loc);
@@ -919,6 +927,10 @@ static void mainmenu(int id) {
                          adjustAnim, mat2(1, 0, 0, 1));
     }
 
+    if (id == 66) {
+        animSin = !animSin;
+    }
+
     if(id == 99) exit(0);
 }
 
@@ -954,6 +966,7 @@ static void makeMenu() {
   glutAddMenuEntry("Position/Scale", 41);
   glutAddMenuEntry("Rotation/Texture Scale", 55);
   glutAddMenuEntry("Animation Distance/Speed", 65);
+  glutAddMenuEntry("Toggle Sin Paths",66);
   glutAddSubMenu("Material", materialMenuId);
   glutAddSubMenu("Texture",texMenuId);
   glutAddSubMenu("Ground Texture",groundMenuId);
