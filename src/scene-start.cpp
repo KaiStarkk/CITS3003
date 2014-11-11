@@ -117,7 +117,7 @@ int toolObj = -1;  // The object currently being modified
 int selectMenuId;
 
 float animFrame = 0.0;
-float animDistance = 10.0;
+float animDistance = 5.0;
 float animSpeed = 10.0;
 bool animSin = false;
 
