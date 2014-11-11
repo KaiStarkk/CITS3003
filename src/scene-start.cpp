@@ -179,7 +179,7 @@ const float impulse = 0.01;
 static float yaw = 0.0;
 static float pitch = 0.0;
 static float dx = 0.0;
-static float dy = 1;
+static float dy = 1.5;
 static float dz = 0.0;
 // Intertia, impulse, and gravity are used in character jumping.
 static float inertia = impulse;
@@ -233,9 +233,9 @@ void reshape(int width, int height) {
     //     of the scene is visible across the width of the window.
 
     if (gameMode) {
-        projection = Perspective(gameFOV, (float)width/(float)height, 0.1, 5.0);
+        projection = Perspective(gameFOV, (float)width/(float)height, 0.1, 50.0);
     } else {
-        projection = Perspective(fov, (float)width/(float)height, 0.1, 10.0);
+        projection = Perspective(fov, (float)width/(float)height, 0.1, 100.0);
     }
 }
 
@@ -308,6 +308,7 @@ void loadTextureIfNotAlreadyLoaded(int i) {
 void loadMeshIfNotAlreadyLoaded(int meshNumber) {
 
     if(meshNumber>=numMeshes || meshNumber < 0) {
+    	cout << meshNumber;
         printf("Error - no such  model number");
         exit(1);
     }
@@ -679,9 +680,9 @@ void display(void) {
         if (jump) {
             dy += inertia * dt;
             inertia -= gravity * dt;
-            if (dy < 1) {
+            if (dy < 1.5) {
                 jump = false;
-                dy = 1;
+                dy = 1.5;
                 inertia = impulse;
             }
         }
